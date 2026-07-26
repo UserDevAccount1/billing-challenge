@@ -112,6 +112,112 @@
             const [alertMsg, setAlertMsg] = useState(null);
             const [alertType, setAlertType] = useState("success");
 
+            // Scenario logs states
+            const [scenarioLogs, setScenarioLogs] = useState([]);
+            const [runningScenario, setScenarioRunning] = useState(false);
+
+            const runScenario = async () => {
+                setScenarioRunning(true);
+                setScenarioLogs([]);
+                
+                const log = (msg) => {
+                    setScenarioLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+                };
+
+                try {
+                    log("Resetting account ledger to fresh state...");
+                    let res = await fetch("/api/reset/", { method: "POST" });
+                    let data = await res.json();
+                    setAccount(data.account);
+                    await new Promise(r => setTimeout(r, 800));
+
+                    log("Step 1: Delivering a $10.00 credit correction (ID: adj-scenario-1)...");
+                    res = await fetch("/api/deliver/", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            adjustment_id: "adj-scenario-1",
+                            period_key: "2026-06",
+                            kind: "credit",
+                            amount: "10.00",
+                            effective_at: new Date().toISOString(),
+                            received_at: new Date().toISOString()
+                        })
+                    });
+                    data = await res.json();
+                    setAccount(data.account);
+                    log("-> Credit accepted. Billing balance updated to $18.00.");
+                    await new Promise(r => setTimeout(r, 800));
+
+                    log("Step 2: Delivering usage correction of 20 API calls (ID: adj-scenario-2)...");
+                    res = await fetch("/api/deliver/", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            adjustment_id: "adj-scenario-2",
+                            period_key: "2026-06",
+                            kind: "usage_correction",
+                            usage_key: "api",
+                            quantity: "20.00",
+                            effective_at: new Date().toISOString(),
+                            received_at: new Date().toISOString()
+                        })
+                    });
+                    data = await res.json();
+                    setAccount(data.account);
+                    log("-> Usage correction accepted. Billing balance updated.");
+                    await new Promise(r => setTimeout(r, 800));
+
+                    log("Step 3: Issuing statement run ST-acct-demo-1 (ID: op-scenario-1)...");
+                    res = await fetch("/api/run/", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ operation_id: "op-scenario-1" })
+                    });
+                    data = await res.json();
+                    setAccount(data.account);
+                    log(`-> Statement run ${data.run.run_id} issued. Amount due locked at $${data.account.amount_due}.`);
+                    await new Promise(r => setTimeout(r, 800));
+
+                    log("Step 4: Adopting reconciliation summaries (ID: adopt-scenario-1)...");
+                    res = await fetch("/api/adopt/", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ adoption_id: "adopt-scenario-1" })
+                    });
+                    data = await res.json();
+                    setAccount(data.account);
+                    log("-> Summaries adopted! Retroactive backfill completed for run ST-acct-demo-1.");
+                    await new Promise(r => setTimeout(r, 800));
+
+                    log("Step 5: Delivering later credit correction of $5.00 (ID: adj-scenario-3)...");
+                    res = await fetch("/api/deliver/", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            adjustment_id: "adj-scenario-3",
+                            period_key: "2026-06",
+                            kind: "credit",
+                            amount: "5.00",
+                            effective_at: new Date().toISOString(),
+                            received_at: new Date().toISOString()
+                        })
+                    });
+                    data = await res.json();
+                    setAccount(data.account);
+                    log("-> Later credit accepted. Cross-run consistency triggered: Run 1 summary auto-refreshed!");
+                    
+                    fetchStatementTree();
+                    log("🎉 Test Scenario Completed Successfully!");
+                    showAlert("Sample scenario completed successfully.");
+                } catch (err) {
+                    log(`❌ Error running scenario: ${err.message}`);
+                    showAlert(err.message, "error");
+                } finally {
+                    setScenarioRunning(false);
+                }
+            };
+
             const fetchAccountData = async () => {
                 try {
                     const res = await fetch("/api/account/");
@@ -312,7 +418,14 @@
                             </div>
                         </div>
                         <div className="flex items-center space-x-4">
-                            <button 
+                            <button
+                                onClick={runScenario}
+                                disabled={runningScenario}
+                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded text-xs font-bold text-white transition disabled:opacity-50"
+                            >
+                                ⚡ Run Test Scenario
+                            </button>
+                            <button
                                 onClick={handleReset}
                                 className="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-xs hover:bg-slate-700 transition"
                             >
@@ -333,7 +446,27 @@
                     )}
 
                     {/* Main Content */}
-                    <main className="flex-1 max-w-7xl w-full mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <main className="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
+                        {/* Scenario Console Logs */}
+                        {scenarioLogs.length > 0 && (
+                            <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 shadow-md font-mono text-xs text-emerald-400">
+                                <div className="flex justify-between items-center border-b border-slate-800 pb-2 mb-3">
+                                    <span className="font-bold text-slate-400">⚡ Interactive Test Scenario Console</span>
+                                    {runningScenario ? (
+                                        <span className="animate-pulse text-amber-400">Running...</span>
+                                    ) : (
+                                        <span className="text-emerald-500">Completed</span>
+                                    )}
+                                </div>
+                                <div className="space-y-1 max-h-40 overflow-y-auto">
+                                    {scenarioLogs.map((log, i) => (
+                                        <div key={i}>{log}</div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         
                         {/* Column 1: Account Overview & Delivery Form */}
                         <div className="space-y-6 lg:col-span-1">
@@ -644,6 +777,8 @@
                                     </div>
                                 )}
                             </div>
+
+                        </div>
 
                         </div>
 
