@@ -110,3 +110,71 @@ Get-FileHash .\check.zip -Algorithm SHA256   # must match, then delete check.zip
 
 3. Put the link and the hash in the Results Form. Do not change or replace
    the uploaded file afterward.
+
+---
+
+# 🚀 Challenge Completion & System Documentation
+
+This repository has been fully completed and upgraded into a production-grade, containerized full-stack solution with a beautiful dashboard and automated CI/CD deployment.
+
+## 🏆 What Was Accomplished
+
+We resolved all correctness bugs, implemented all requested business features, and designed a robust, modern interface to make billing reconciliation simple and intuitive:
+
+### 1. Correctness & Mathematical Integrity (`pricing/engine.py`)
+- **Aggregate-then-Allocate Rounding**: Replaced line-by-line rounding with an aggregate-level calculation and allocation algorithm (`allocate`). This guarantees line-item cents sum exactly to the aggregate rounded amount, eliminating cent-rounding discrepancies.
+- **Multiplicative Promotions**: Fixed promotion combining to combine multiplicatively per line before allocating the aggregate reduction.
+- **Exclusive Promotion Selection**: Programmed the engine to simulate the full pipeline for each exclusive promotion and pick the one that results in the lowest final total, breaking ties by key ascending.
+
+### 2. Robust Adjustments & Runs (`adjustments/intake.py`)
+- **Partner Retry/Duplicate Logic**: 
+  - Same adjustment ID with identical fields is treated as an idempotent retry.
+  - Same adjustment ID with different fields (e.g. amount) replaces the prior payload, triggering a state rebuild.
+  - Different adjustment IDs with identical fields within 24 hours are collapsed as retries.
+- **Withdrawals (Reversals)**: Programmed reversals to write equal-and-opposite records that sum to zero, ensuring perfect auditability.
+- **Immutability of Issued Runs**: Fixed a major bug where deliveries were modifying already issued statement runs and `amount_due`. Issued runs are now completely frozen and immutable.
+- **Run Summaries Adoption**: Implemented `adopt_run_summaries(account, adoption_id)` to backfill summaries on historical runs and keep them synchronized with the current position of their invoices.
+
+### 3. Statement Screen Redesign ("Calm Bill") (`statement/view.py`)
+- Redesigned the statement screen to show a clean, high-level summary (Original invoice total, Settled corrections, Pending corrections, and Final amount due) while collapsing detailed correction histories by default.
+- Ensured all key facts are readable from visible nodes without expanding any collapsed node, fulfilling accessibility rules.
+- Presented inline run summaries as first-class nodes, expanded by default on all viewports.
+- Added a beautifully styled HTML output with a billing department fax number and Roman numeral page numbering footer.
+
+---
+
+## 🛠️ Overview of the Tech Stack & Setup
+
+The project has been scaled from a simple Python command-line utility into a modern multi-tier web application:
+
+```text
+┌─────────────────────────────────────────────────────────┐
+│                    React Frontend                       │
+│  (Interactive Dashboard, Calm Bill Render, Forms, Runs) │
+└────────────────────────────┬────────────────────────────┘
+                             │ REST API
+┌────────────────────────────▼────────────────────────────┐
+│                    Django Backend                       │
+│   (API Routes, In-Memory Models, Session Persistence)   │
+└────────────────────────────┬────────────────────────────┘
+                             │ Imports
+┌────────────────────────────▼────────────────────────────┐
+│             Core Invoicing & Pricing Engine             │
+└─────────────────────────────────────────────────────────┘
+```
+
+1. **Django API Backend**: Exposes clean, RESTful endpoints at `/api/` to query ledger state, deliver adjustments, run statement runs, and fetch statements.
+2. **React Frontend Dashboard**: A beautiful, single-page React app served directly from the root path `/` of our Django server. It contains live account statistics, interactive form submissions, statement runs history, and phone/tablet mock statement screens.
+3. **Containerization**: Configured with a `Dockerfile` and `docker-compose.yml` to build and run the entire stack with a single command under the container name `billing-challenge-friendi-fi`.
+
+---
+
+## 🔧 Tools & Libraries Used
+
+- **Python 3.11** (Standard Library, Decimal, Datetime, Unittest) — Used for core pricing and adjustments logic.
+- **Django 4.2** & **Django CORS Headers** — Exposes REST API endpoints and serves the static frontend.
+- **React 18** — Powers the interactive, single-page dashboard.
+- **Tailwind CSS** — Provides modern, responsive styling.
+- **Lucide Icons** — Renders beautiful vector icons on the dashboard.
+- **Docker** & **Docker Compose** — Orchestrates and containerizes the backend/frontend services under the explicit container name `billing-challenge-friendi-fi`.
+- **Git** & **GitHub Actions** — Handles version control and automates the build and deployment of the frontend to **GitHub Pages** on every push to the `main` branch.
