@@ -25,6 +25,66 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
+        function StatementNode({ node, depth = 0 }) {
+            const [collapsed, setCollapsed] = useState(node.collapsed);
+
+            const toggleCollapsed = () => setCollapsed(!collapsed);
+
+            const roleStyles = {
+                header: "text-slate-800 font-bold text-lg border-b pb-2 mb-4",
+                issued_amount: "text-slate-600 flex justify-between my-2 text-sm",
+                amount_due: "text-emerald-800 font-extrabold text-lg border-t-2 border-slate-800 pt-3 mt-4 flex justify-between",
+                run: "text-indigo-700 flex justify-between my-2 text-sm italic font-semibold",
+                line: "text-slate-700 flex justify-between my-2 text-sm",
+                correction: "text-amber-700 flex justify-between my-1 text-xs pl-4 border-l-2 border-amber-200",
+                pending: "text-rose-600 flex justify-between my-1 text-xs pl-4 border-l-2 border-rose-200",
+                settlement: "text-slate-500 text-xs pl-6 italic",
+            };
+
+            const isGroup = node.role === "group";
+
+            return (
+                <div className="mb-2">
+                    {isGroup ? (
+                        <div className="border border-slate-100 rounded bg-slate-50/50 p-3 my-3">
+                            <button 
+                                onClick={toggleCollapsed}
+                                className="flex items-center justify-between w-full text-slate-700 font-bold text-sm hover:text-slate-900 focus:outline-none"
+                            >
+                                <span>{node.label}</span>
+                                <span className="text-xs text-slate-400">
+                                    {collapsed ? "[expand]" : "[collapse]"}
+                                </span>
+                            </button>
+                            {!collapsed && (
+                                <div className="mt-3 pl-2 border-l border-slate-200 space-y-2">
+                                    {node.children.map((c, i) => (
+                                        <StatementNode key={c.label + c.role + i} node={c} depth={depth + 1} />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className={roleStyles[node.role] || "text-slate-700 text-sm"}>
+                            <div className="flex justify-between w-full">
+                                <span>{node.label}</span>
+                                {node.value !== null && (
+                                    <span className="font-mono">{node.value}</span>
+                                )}
+                            </div>
+                            {node.children && node.children.length > 0 && (
+                                <div className="w-full mt-1">
+                                    {node.children.map((c, i) => (
+                                        <StatementNode key={c.label + c.role + i} node={c} depth={depth + 1} />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
         function App() {
             const [account, setAccount] = useState(null);
             const [statementTree, setStatementTree] = useState(null);
@@ -237,61 +297,6 @@
                     </div>
                 );
             }
-
-            // Node renderer for statement tree
-            const renderNode = (node, depth = 0) => {
-                const [collapsed, setCollapsed] = useState(node.collapsed);
-
-                const toggleCollapsed = () => setCollapsed(!collapsed);
-
-                const roleStyles = {
-                    header: "text-slate-800 font-bold text-lg border-b pb-2 mb-4",
-                    issued_amount: "text-slate-600 flex justify-between my-2 text-sm",
-                    amount_due: "text-emerald-800 font-extrabold text-lg border-t-2 border-slate-800 pt-3 mt-4 flex justify-between",
-                    run: "text-indigo-700 flex justify-between my-2 text-sm italic font-semibold",
-                    line: "text-slate-700 flex justify-between my-2 text-sm",
-                    correction: "text-amber-700 flex justify-between my-1 text-xs pl-4 border-l-2 border-amber-200",
-                    pending: "text-rose-600 flex justify-between my-1 text-xs pl-4 border-l-2 border-rose-200",
-                    settlement: "text-slate-500 text-xs pl-6 italic",
-                };
-
-                const isGroup = node.role === "group";
-
-                return (
-                    <div key={node.label + node.role + depth} className="mb-2">
-                        {isGroup ? (
-                            <div className="border border-slate-100 rounded bg-slate-50/50 p-3 my-3">
-                                <button 
-                                    onClick={toggleCollapsed}
-                                    className="flex items-center justify-between w-full text-slate-700 font-bold text-sm hover:text-slate-900 focus:outline-none"
-                                >
-                                    <span>{node.label}</span>
-                                    <span className="text-xs text-slate-400">
-                                        {collapsed ? "[expand]" : "[collapse]"}
-                                    </span>
-                                </button>
-                                {!collapsed && (
-                                    <div className="mt-3 pl-2 border-l border-slate-200 space-y-2">
-                                        {node.children.map(c => renderNode(c, depth + 1))}
-                                    </div>
-                                )}
-                            </div>
-                        ) : (
-                            <div className={roleStyles[node.role] || "text-slate-700 text-sm"}>
-                                <span>{node.label}</span>
-                                {node.value !== null && (
-                                    <span className="font-mono">{node.value}</span>
-                                )}
-                                {node.children && node.children.length > 0 && (
-                                    <div className="w-full mt-1">
-                                        {node.children.map(c => renderNode(c, depth + 1))}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                );
-            };
 
             return (
                 <div className="min-h-screen flex flex-col font-sans">
@@ -536,7 +541,7 @@
                                 {/* Render Statement Node Tree */}
                                 {statementTree ? (
                                     <div className={`border border-slate-200 p-4 rounded bg-white overflow-x-auto ${viewport === 'phone' ? 'max-w-[320px]' : 'max-w-full'}`}>
-                                        {renderNode(statementTree)}
+                                        <StatementNode node={statementTree} />
                                     </div>
                                 ) : (
                                     <p className="text-sm text-slate-400 italic">No statement available.</p>
