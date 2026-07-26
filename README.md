@@ -18,6 +18,8 @@ nothing to install. Verify your setup and your work with:
 make test-visible
 ```
 
+For detailed instructions on how to test the core logic, backend endpoints, and frontend dashboard, please read our [Testing Manual](TESTING_MANUAL.md).
+
 ## Your clock
 
 Your 180 minutes start when you submit the Start Form and include
