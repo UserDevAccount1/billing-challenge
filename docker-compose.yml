@@ -3,6 +3,7 @@ version: '3.8'
 services:
   web:
     build: .
+    container_name: billing-challenge-friendi-fi
     ports:
       - "8000:8000"
     volumes:
