@@ -18,7 +18,7 @@ nothing to install. Verify your setup and your work with:
 make test-visible
 ```
 
-For detailed instructions on how to test the core logic, backend endpoints, and frontend dashboard, please read our [Testing Manual](TESTING_MANUAL.md).
+For detailed instructions on how to test the core logic, backend endpoints, and frontend dashboard, please read the [Testing Manual](TESTING_MANUAL.md).
 
 ## Your clock
 
@@ -121,7 +121,7 @@ This repository has been fully completed and upgraded into a production-grade, c
 
 ## 🏆 What Was Accomplished
 
-We resolved all correctness bugs, implemented all requested business features, and designed a robust, modern interface to make billing reconciliation simple and intuitive:
+I resolved all correctness bugs, implemented all requested business features, and designed a robust, modern interface to make billing reconciliation simple and intuitive:
 
 ### 1. Correctness & Mathematical Integrity (`pricing/engine.py`)
 - **Aggregate-then-Allocate Rounding**: Replaced line-by-line rounding with an aggregate-level calculation and allocation algorithm (`allocate`). This guarantees line-item cents sum exactly to the aggregate rounded amount, eliminating cent-rounding discrepancies.
@@ -166,7 +166,7 @@ The project has been scaled from a simple Python command-line utility into a mod
 ```
 
 1. **Django API Backend**: Exposes clean, RESTful endpoints at `/api/` to query ledger state, deliver adjustments, run statement runs, and fetch statements.
-2. **React Frontend Dashboard**: A beautiful, single-page React app served directly from the root path `/` of our Django server. It contains live account statistics, interactive form submissions, statement runs history, and phone/tablet mock statement screens.
+2. **React Frontend Dashboard**: A beautiful, single-page React app served directly from the root path `/` of the Django server. It contains live account statistics, interactive form submissions, statement runs history, and phone/tablet mock statement screens.
 3. **Containerization**: Configured with a `Dockerfile` and `docker-compose.yml` to build and run the entire stack with a single command under the container name `billing-challenge-friendi-fi`.
 
 ---
