@@ -16,7 +16,6 @@ env/
 .docker/
 
 # Submission
-submission.zip
 package_submission.py
 
 # OS
